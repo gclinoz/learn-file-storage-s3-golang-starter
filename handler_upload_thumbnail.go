@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"io"
+	"encoding/base64"
 
 	"github.com/bootdotdev/learn-file-storage-s3-golang-starter/internal/auth"
 	"github.com/google/uuid"
@@ -59,13 +60,8 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	tmb := thumbnail{
-		data:		img,
-		mediaType:	ct,
-	}
-	videoThumbnails[videoID] = tmb
-
-	newURL := fmt.Sprintf("http://localhost:%s/api/thumbnails/%s", cfg.port, videoIDString)
+	baseStr := base64.StdEncoding.EncodeToString(img)
+	newURL := fmt.Sprintf("data:%s;base64,%s", ct, baseStr)
 	meta.ThumbnailURL = &newURL
 	err = cfg.db.UpdateVideo(meta)
 	if err != nil {
