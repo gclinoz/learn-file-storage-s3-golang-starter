@@ -49,7 +49,7 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		respondWithError(w, http.StatusBadRequest, "Error when parsing header", err)
 		return
 	}
-	if mediatype != "image/jpeg" || mediatype != "image/png" {
+	if mediatype != "image/jpeg" && mediatype != "image/png" {
 		respondWithError(w, http.StatusBadRequest, "Wrong media type", err)
 		return
 	}
