@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"path/filepath"
+	"mime"
 
 	"github.com/bootdotdev/learn-file-storage-s3-golang-starter/internal/auth"
 	"github.com/google/uuid"
@@ -43,14 +44,16 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		respondWithError(w, http.StatusBadRequest, "Unable to parse form file", err)
 		return
 	}
-	ct := header.Header.Get("Content-Type")
+	mediatype, _, err := mime.ParseMediaType(header.Header.Get("Content-Type"))
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Error when parsing header", err)
+		return
+	}
+	if mediatype != "image/jpeg" || mediatype != "image/png" {
+		respondWithError(w, http.StatusBadRequest, "Wrong media type", err)
+		return
+	}
 	defer file.Close()
-
-	// img, err := io.ReadAll(file)
-	// if err != nil {
-	// 	respondWithError(w, http.StatusBadRequest, "Unable to read image data", err)
-	// 	return
-	// }
 
 	meta, err := cfg.db.GetVideo(videoID)
 	if err != nil {
@@ -62,7 +65,7 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	fileExt := strings.Split(ct, "/")[1]
+	fileExt := strings.Split(mediatype, "/")[1]
 	imgPath := filepath.Join(cfg.assetsRoot, videoIDString) + "." + fileExt
 	imgFile, err := os.Create(imgPath)
 	if err != nil {
