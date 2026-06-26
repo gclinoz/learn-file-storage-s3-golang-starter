@@ -84,12 +84,23 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+
 	vidFile.Seek(0, io.SeekStart)
 
-	keyPrefix := make([]byte, 32)
-	rand.Read(keyPrefix)
-	fString := base64.RawURLEncoding.EncodeToString(keyPrefix)
-	key := fmt.Sprintf("%s.%s", fString, fileExt)
+	aspect, err := getVideoAspectRatio(vidFile.Name())
+	keyPrefix := "other"
+	switch aspect {
+	case "16:9":
+		keyPrefix = "landscape"
+	case "9:16":
+		keyPrefix = "portrait"
+	default:
+	}
+
+	keyMain := make([]byte, 32)
+	rand.Read(keyMain)
+	fString := base64.RawURLEncoding.EncodeToString(keyMain)
+	key := fmt.Sprintf("%s/%s.%s", keyPrefix, fString, fileExt)
 
 	paramsPut := s3.PutObjectInput{
 		Bucket:			&cfg.s3Bucket,
