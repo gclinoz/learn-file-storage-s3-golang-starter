@@ -87,6 +87,19 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 
 	vidFile.Seek(0, io.SeekStart)
 
+	procVidPath, err := processVideoForFastStart(vidFile.Name())
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Error when preprocessing video", err)
+		return
+	}
+	procVidFile, err := os.Open(procVidPath)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Error when opening video file", err)
+		return
+	}
+	defer os.Remove(procVidFile.Name())
+	defer procVidFile.Close()
+
 	aspect, err := getVideoAspectRatio(vidFile.Name())
 	keyPrefix := "other"
 	switch aspect {
@@ -105,7 +118,7 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	paramsPut := s3.PutObjectInput{
 		Bucket:			&cfg.s3Bucket,
 		Key:			&key,
-		Body:			vidFile,
+		Body:			procVidFile,
 		ContentType:	&mediatype,
 	}
 	cfg.s3Client.PutObject(context.Background(), &paramsPut)
